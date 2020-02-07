@@ -1,5 +1,12 @@
-ARG ALPINE_VERSION
-ARG GO_VERSION
+ARG ALPINE_VERSION=3.10
+ARG GO_VERSION=1.13.4
+ARG GRPC_GATEWAY_VERSION=1.12.2
+ARG GRPC_JAVA_VERSION=1.26.0
+ARG GRPC_VERSION=1.26.0
+ARG PROTOC_GEN_GO_VERSION=1.3.2
+ARG PROTOC_GEN_GOGO_VERSION=ba06b47c162d49f2af050fb4c75bcbc86a159d5c
+ARG PROTOC_GEN_LINT_VERSION=0.2.1
+ARG UPX_VERSION=3.96
 
 FROM alpine:${ALPINE_VERSION} as protoc_builder
 RUN apk add --no-cache build-base curl automake autoconf libtool git zlib-dev
@@ -43,7 +50,7 @@ RUN mkdir -p ${GOPATH}/src/github.com/golang/protobuf && \
 
 ARG PROTOC_GEN_GOGO_VERSION
 RUN mkdir -p ${GOPATH}/src/github.com/gogo/protobuf && \
-    curl -sSL https://api.github.com/repos/gogo/protobuf/tarball/v${PROTOC_GEN_GOGO_VERSION} | tar xz --strip 1 -C ${GOPATH}/src/github.com/gogo/protobuf &&\
+    curl -sSL https://api.github.com/repos/gogo/protobuf/tarball/${PROTOC_GEN_GOGO_VERSION} | tar xz --strip 1 -C ${GOPATH}/src/github.com/gogo/protobuf &&\
     cd ${GOPATH}/src/github.com/gogo/protobuf && \
     go build -ldflags '-w -s' -o /gogo-protobuf-out/protoc-gen-gogo ./protoc-gen-gogo && \
     install -Ds /gogo-protobuf-out/protoc-gen-gogo /out/usr/bin/protoc-gen-gogo && \
@@ -91,7 +98,7 @@ RUN upx --lzma \
 RUN find /out -name "*.a" -delete -or -name "*.la" -delete
 
 FROM alpine:${ALPINE_VERSION}
-LABEL maintainer="Jaegertracing Authors"
+LABEL maintainer="The Jaeger Authors"
 COPY --from=packer /out/ /
 RUN apk add --no-cache bash libstdc++ && \
     ln -s /usr/bin/grpc_cpp_plugin /usr/bin/protoc-gen-grpc-cpp && \
