@@ -48,14 +48,6 @@ RUN mkdir -p /grpc-java && \
         -o protoc-gen-grpc-java && \
     install -Ds protoc-gen-grpc-java /out/usr/bin/protoc-gen-grpc-java
 
-ARG GRPC_WEB_VERSION
-RUN mkdir -p /grpc-web && \
-    curl -sSL https://api.github.com/repos/grpc/grpc-web/tarball/${GRPC_WEB_VERSION} | tar xz --strip 1 -C /grpc-web && \
-    cd /grpc-web && \
-    make install-plugin && \
-    install -Ds /usr/local/bin/protoc-gen-grpc-web /out/usr/bin/protoc-gen-grpc-web
-
-
 FROM golang:${GO_VERSION}-alpine${ALPINE_VERSION} as go_builder
 RUN apk add --no-cache build-base curl git
 
@@ -82,31 +74,13 @@ RUN mkdir -p ${GOPATH}/src/github.com/golang/protobuf && \
 
 ARG PROTOC_GEN_GOGO_VERSION
 RUN mkdir -p ${GOPATH}/src/github.com/gogo/protobuf && \
-    curl -sSL https://api.github.com/repos/gogo/protobuf/tarball/v${PROTOC_GEN_GOGO_VERSION} | tar xz --strip 1 -C ${GOPATH}/src/github.com/gogo/protobuf &&\
+    curl -sSL https://api.github.com/repos/gogo/protobuf/tarball/${PROTOC_GEN_GOGO_VERSION} | tar xz --strip 1 -C ${GOPATH}/src/github.com/gogo/protobuf &&\
     cd ${GOPATH}/src/github.com/gogo/protobuf && \
     go build -ldflags '-w -s' -o /gogo-protobuf-out/protoc-gen-gogo ./protoc-gen-gogo && \
     install -Ds /gogo-protobuf-out/protoc-gen-gogo /out/usr/bin/protoc-gen-gogo && \
     mkdir -p /out/usr/include/github.com/gogo/protobuf/protobuf/google/protobuf && \
     install -D $(find ./protobuf/google/protobuf -name '*.proto') -t /out/usr/include/github.com/gogo/protobuf/protobuf/google/protobuf && \
     install -D ./gogoproto/gogo.proto /out/usr/include/github.com/gogo/protobuf/gogoproto/gogo.proto
-
-ARG PROTOC_GEN_GOGOTTN_VERSION
-RUN mkdir -p ${GOPATH}/src/github.com/TheThingsIndustries/protoc-gen-gogottn && \
-    curl -sSL https://api.github.com/repos/TheThingsIndustries/protoc-gen-gogottn/tarball/v${PROTOC_GEN_GOGOTTN_VERSION} | tar xz --strip 1 -C ${GOPATH}/src/github.com/TheThingsIndustries/protoc-gen-gogottn && \
-    cd ${GOPATH}/src/github.com/TheThingsIndustries/protoc-gen-gogottn && \
-    go build -ldflags '-w -s' -o /protoc-gen-gogottn-out/protoc-gen-gogottn . && \
-    install -Ds /protoc-gen-gogottn-out/protoc-gen-gogottn /out/usr/bin/protoc-gen-gogottn
-
-ARG PROTOC_GEN_GQL_VERSION
-RUN mkdir -p ${GOPATH}/src/github.com/danielvladco/go-proto-gql && \
-    curl -sSL https://api.github.com/repos/danielvladco/go-proto-gql/tarball/v${PROTOC_GEN_GQL_VERSION} | tar xz --strip 1 -C ${GOPATH}/src/github.com/danielvladco/go-proto-gql && \
-    cd ${GOPATH}/src/github.com/danielvladco/go-proto-gql && \
-    go build -ldflags '-w -s' -o /go-proto-gql-out/protoc-gen-gql ./protoc-gen-gql && \
-    go build -ldflags '-w -s' -o /go-proto-gql-out/protoc-gen-gogqlgen ./protoc-gen-gogqlgen && \
-    go build -ldflags '-w -s' -o /go-proto-gql-out/protoc-gen-gqlgencfg ./protoc-gen-gqlgencfg && \
-    install -Ds /go-proto-gql-out/protoc-gen-gql /out/usr/bin/protoc-gen-gql && \
-    install -Ds /go-proto-gql-out/protoc-gen-gogqlgen /out/usr/bin/protoc-gen-gogqlgen && \
-    install -Ds /go-proto-gql-out/protoc-gen-gqlgencfg /out/usr/bin/protoc-gen-gqlgencfg
 
 ARG PROTOC_GEN_LINT_VERSION
 RUN cd / && \
@@ -115,14 +89,6 @@ RUN cd / && \
     cd /protoc-gen-lint-out && \
     unzip -q /protoc-gen-lint_linux_amd64.zip && \
     install -Ds /protoc-gen-lint-out/protoc-gen-lint /out/usr/bin/protoc-gen-lint
-
-ARG PROTOC_GEN_VALIDATE_VERSION
-RUN mkdir -p ${GOPATH}/src/github.com/envoyproxy/protoc-gen-validate && \
-    curl -sSL https://api.github.com/repos/envoyproxy/protoc-gen-validate/tarball/v${PROTOC_GEN_VALIDATE_VERSION} | tar xz --strip 1 -C ${GOPATH}/src/github.com/envoyproxy/protoc-gen-validate && \
-    cd ${GOPATH}/src/github.com/envoyproxy/protoc-gen-validate && \
-    go build -ldflags '-w -s' -o /protoc-gen-validate-out/protoc-gen-validate . && \
-    install -Ds /protoc-gen-validate-out/protoc-gen-validate /out/usr/bin/protoc-gen-validate && \
-    install -D ./validate/validate.proto /out/usr/include/github.com/envoyproxy/protoc-gen-validate/validate/validate.proto
 
 ARG GRPC_GATEWAY_VERSION
 RUN mkdir -p ${GOPATH}/src/github.com/grpc-ecosystem/grpc-gateway && \
@@ -209,7 +175,7 @@ RUN upx --lzma $(find /out/usr/bin/ \
 RUN find /out -name "*.a" -delete -or -name "*.la" -delete
 
 FROM alpine:${ALPINE_VERSION}
-LABEL maintainer="Roman Volosatovs <roman@thethingsnetwork.org>"
+LABEL maintainer="The Jaeger Authors"
 COPY --from=packer /out/ /
 RUN apk add --no-cache bash libstdc++ && \
     wget -q -O /etc/apk/keys/sgerrand.rsa.pub https://alpine-pkgs.sgerrand.com/sgerrand.rsa.pub && \
@@ -218,12 +184,8 @@ RUN apk add --no-cache bash libstdc++ && \
     for p in protoc-gen-swift protoc-gen-swiftgrpc; do ln -s /protoc-gen-swift/${p} /usr/bin/${p}; done && \
     ln -s /usr/bin/grpc_cpp_plugin /usr/bin/protoc-gen-grpc-cpp && \
     ln -s /usr/bin/grpc_csharp_plugin /usr/bin/protoc-gen-grpc-csharp && \
-    ln -s /usr/bin/grpc_objective_c_plugin /usr/bin/protoc-gen-grpc-objc && \
     ln -s /usr/bin/grpc_node_plugin /usr/bin/protoc-gen-grpc-js && \
-    ln -s /usr/bin/grpc_php_plugin /usr/bin/protoc-gen-grpc-php && \
-    ln -s /usr/bin/grpc_python_plugin /usr/bin/protoc-gen-grpc-python && \
-    ln -s /usr/bin/grpc_ruby_plugin /usr/bin/protoc-gen-grpc-ruby && \
-    ln -s /usr/bin/protoc-gen-swiftgrpc /usr/bin/protoc-gen-grpc-swift
+    ln -s /usr/bin/grpc_python_plugin /usr/bin/protoc-gen-grpc-python
 COPY protoc-wrapper /usr/bin/protoc-wrapper
 ENV LD_LIBRARY_PATH='/usr/lib:/usr/lib64:/usr/lib/local'
 ENTRYPOINT ["protoc-wrapper", "-I/usr/include"]
