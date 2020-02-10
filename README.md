@@ -60,3 +60,7 @@ Example for Java:
 docker run --rm -v${PWD}:{PWD} -w${PWD} jaegertracing/protobuf:latest --proto_path=${PWD} \
     --java_out=${PWD} -I/usr/include/github.com/gogo/protobuf ${PWD}/model.proto
 ```
+
+CLI options:
+- `--proto_path`: The path where protoc should search for proto files
+- `--java_out`  : Generate Java code in the provided path
