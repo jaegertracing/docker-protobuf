@@ -1,10 +1,15 @@
 # Protocol Buffers + Docker
-A lightweight `protoc` Docker image.
-It started out as https://github.com/znly/docker-protobuf fork, but grew into a stand-alone project.
+A lightweight `protoc` Docker image, with all dependencies built-in, to generate code in multiple languages.
 
-This repo has been configured with dependencies from the [Jaeger](github.com/jaegertracing/jaeger) project.
+## Purpose
 
-## What's included:
+`gogoproto` annotations in proto files help make internal domain model types more efficient in golang, but using these proto files to generate code in other languages requires to include these dependencies anyway. The `Dockerfile` in this repo compiles all dependencies into the image, for easy code generation in multiple languages.
+
+## Contents
+
+`Dockerfile` configured with dependencies specific to the [Jaeger](github.com/jaegertracing/jaeger) project. 
+
+## What's included in the image
 - https://github.com/ckaznocha/protoc-gen-lint
 - https://github.com/gogo/protobuf
 - https://github.com/golang/protobuf
@@ -26,12 +31,12 @@ This repo has been configured with dependencies from the [Jaeger](github.com/jae
 
 ## Usage
 ```
-$ docker run --rm -v<some-path>:<some-path> -w<some-path> thethingsindustries/protoc [OPTION] PROTO_FILES
+$ docker run --rm -v<some-path>:<some-path> -w<some-path> jaegertracing/protobuf [OPTION] PROTO_FILES
 ```
 
 For help try:
 ```
-$ docker run --rm thethingsindustries/protoc --help
+$ docker run --rm jaegertracing/protobuf --help
 ```
 
 ### To generate language specific code
@@ -52,6 +57,6 @@ $ docker run --rm thethingsindustries/protoc --help
 
 Example for Java:
 ```
-docker run --rm -v${PWD}:/model/proto annanay25/jaeger-docker-protobuf:latest --proto_path=/model/proto \
-    --java_out=/model/proto -I/usr/include/github.com/gogo/protobuf /model/proto/model.proto
+docker run --rm -v${PWD}:{PWD} -w${PWD} jaegertracing/protobuf:latest --proto_path=${PWD} \
+    --java_out=${PWD} -I/usr/include/github.com/gogo/protobuf ${PWD}/model.proto
 ```
