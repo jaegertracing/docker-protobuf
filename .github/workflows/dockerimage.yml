@@ -28,7 +28,7 @@ jobs:
         }
 
         if [[ "${GITHUB_REF}" == "refs/heads/master" ]]; then
-          tag_and_push "master"
+          tag_and_push "latest"
         elif [[ "${GITHUB_REF}" =~ refs/tags/v[0-9]+\.[0-9]+\.[0-9]+ ]]; then
             TAG="${GITHUB_REF#"refs/tags/v"}"
             tag_and_push "${TAG}"
