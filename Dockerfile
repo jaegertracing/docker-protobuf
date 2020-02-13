@@ -14,6 +14,7 @@ RUN apk add --no-cache build-base curl automake autoconf libtool git zlib-dev
 
 RUN mkdir -p /out
 
+
 ARG GRPC_VERSION
 RUN git clone --recursive --depth=1 -b v${GRPC_VERSION} https://github.com/grpc/grpc.git /grpc && \
     ln -s /grpc/third_party/protobuf /protobuf && \
