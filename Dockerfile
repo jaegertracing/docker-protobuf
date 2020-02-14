@@ -4,10 +4,12 @@ ARG GO_VERSION
 ARG RUST_VERSION
 ARG SWIFT_VERSION
 
+
 FROM alpine:${ALPINE_VERSION} as protoc_builder
 RUN apk add --no-cache build-base curl automake autoconf libtool git zlib-dev linux-headers cmake ninja
 
 RUN mkdir -p /out
+
 
 ARG GRPC_VERSION
 RUN git clone --recursive --depth=1 -b v${GRPC_VERSION} https://github.com/grpc/grpc.git /grpc && \
