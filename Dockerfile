@@ -8,10 +8,12 @@ ARG PROTOC_GEN_GOGO_VERSION=ba06b47c162d49f2af050fb4c75bcbc86a159d5c
 ARG PROTOC_GEN_LINT_VERSION=0.2.1
 ARG UPX_VERSION=3.96
 
+
 FROM alpine:${ALPINE_VERSION} as protoc_builder
 RUN apk add --no-cache build-base curl automake autoconf libtool git zlib-dev
 
 RUN mkdir -p /out
+
 
 ARG GRPC_VERSION
 RUN git clone --recursive --depth=1 -b v${GRPC_VERSION} https://github.com/grpc/grpc.git /grpc && \
