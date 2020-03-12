@@ -77,5 +77,5 @@ docker run --rm -u $(id -u) -v${PWD}:${PWD} -w${PWD} jaegertracing/protobuf:late
 
 Use this command to find the path to proto files included in the image:
 ```
-docker run --rm -it --entrypoint=/bin/sh  jaegertracing/protobuf:latest -c "ls /usr/include" 
+docker run --rm -it --entrypoint=/bin/sh jaegertracing/protobuf:latest -c "find /usr/include -name *.proto"
 ```
