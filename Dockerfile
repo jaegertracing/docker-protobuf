@@ -1,16 +1,16 @@
-ARG ALPINE_VERSION=3.10
-ARG GO_VERSION=1.13.4
-ARG GRPC_GATEWAY_VERSION=1.12.2
-ARG GRPC_JAVA_VERSION=1.26.0
-ARG GRPC_VERSION=1.26.0
-ARG PROTOC_GEN_GO_VERSION=1.3.2
-ARG PROTOC_GEN_GOGO_VERSION=ba06b47c162d49f2af050fb4c75bcbc86a159d5c
+ARG ALPINE_VERSION=3.11
+ARG GO_VERSION=1.14.2
+ARG GRPC_GATEWAY_VERSION=1.14.3
+ARG GRPC_JAVA_VERSION=1.28.1
+ARG GRPC_VERSION=1.28.1
+ARG PROTOC_GEN_GO_VERSION=1.4.0
+ARG PROTOC_GEN_GOGO_VERSION=1.3.1
 ARG PROTOC_GEN_LINT_VERSION=0.2.1
 ARG UPX_VERSION=3.96
 
 
 FROM alpine:${ALPINE_VERSION} as protoc_builder
-RUN apk add --no-cache build-base curl automake autoconf libtool git zlib-dev
+RUN apk add --no-cache build-base curl cmake autoconf libtool git zlib-dev linux-headers
 
 RUN mkdir -p /out
 
@@ -18,15 +18,15 @@ RUN mkdir -p /out
 ARG GRPC_VERSION
 RUN git clone --recursive --depth=1 -b v${GRPC_VERSION} https://github.com/grpc/grpc.git /grpc && \
     ln -s /grpc/third_party/protobuf /protobuf && \
-    cd /protobuf && \
-    ./autogen.sh && \
-    ./configure --prefix=/usr --enable-static=no && \
-    make && \
-    make check && \
-    make install && \
-    make install DESTDIR=/out && \
-    cd /grpc && \
-    make install-plugins prefix=/out/usr
+    mkdir -p /grpc/cmake/build && \
+    cd /grpc/cmake/build && \
+	cmake \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DgRPC_BUILD_TESTS=OFF \
+        -DgRPC_INSTALL=ON \
+		-DCMAKE_INSTALL_PREFIX=/out/usr \
+        ../.. && \
+    make -j4 install
 
 ARG GRPC_JAVA_VERSION
 RUN mkdir -p /grpc-java && \
@@ -34,8 +34,10 @@ RUN mkdir -p /grpc-java && \
     cd /grpc-java && \
     g++ \
         -I. -I/protobuf/src \
+        -I/out/usr/include \
         compiler/src/java_plugin/cpp/*.cpp \
-        -L/protobuf/src/.libs \
+        -L/out/usr/lib \
+        -L/out/usr/lib64 \
         -lprotoc -lprotobuf -lpthread --std=c++0x -s \
         -o protoc-gen-grpc-java && \
     install -Ds protoc-gen-grpc-java /out/usr/bin/protoc-gen-grpc-java
@@ -52,7 +54,7 @@ RUN mkdir -p ${GOPATH}/src/github.com/golang/protobuf && \
 
 ARG PROTOC_GEN_GOGO_VERSION
 RUN mkdir -p ${GOPATH}/src/github.com/gogo/protobuf && \
-    curl -sSL https://api.github.com/repos/gogo/protobuf/tarball/${PROTOC_GEN_GOGO_VERSION} | tar xz --strip 1 -C ${GOPATH}/src/github.com/gogo/protobuf &&\
+    curl -sSL https://api.github.com/repos/gogo/protobuf/tarball/v${PROTOC_GEN_GOGO_VERSION} | tar xz --strip 1 -C ${GOPATH}/src/github.com/gogo/protobuf &&\
     cd ${GOPATH}/src/github.com/gogo/protobuf && \
     go build -ldflags '-w -s' -o /gogo-protobuf-out/protoc-gen-gogo ./protoc-gen-gogo && \
     install -Ds /gogo-protobuf-out/protoc-gen-gogo /out/usr/bin/protoc-gen-gogo && \
