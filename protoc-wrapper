@@ -48,6 +48,6 @@ fi
 if [ ${csharp_out} ]; then
     ${protoc_csharp_cmd} || exit 1
 fi
-if [ ${outs[@]} ]; then
+if [ ${#outs[@]} -gt 0 ]; then
     exec ${protoc_cmd}
 fi
