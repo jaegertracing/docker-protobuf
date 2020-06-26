@@ -11,8 +11,10 @@ RUN apk add --no-cache build-base curl automake autoconf libtool git zlib-dev li
 RUN mkdir -p /out
 
 
+FROM protoc_base as protoc_builder
 ARG GRPC_VERSION
-RUN git clone --recursive --depth=1 -b v${GRPC_VERSION} https://github.com/grpc/grpc.git /grpc && \
+RUN apk add --no-cache automake && \
+    git clone --recursive --depth=1 -b v${GRPC_VERSION} https://github.com/grpc/grpc.git /grpc && \
     ln -s /grpc/third_party/protobuf /protobuf && \
     mkdir -p /grpc/cmake/build && \
     cd /grpc/cmake/build && \
@@ -48,7 +50,32 @@ RUN mkdir -p /grpc-java && \
         -L/usr/lib64 \
         -lprotoc -lprotobuf -lpthread --std=c++0x -s \
         -o protoc-gen-grpc-java && \
-    install -Ds protoc-gen-grpc-java /out/usr/bin/protoc-gen-grpc-java
+    install -Ds protoc-gen-grpc-java /out/usr/bin/protoc-gen-grpc-java && \
+    rm -Rf /grpc-java && \
+    rm -Rf /grpc
+
+
+FROM protoc_base AS protoc_cs_builder
+ARG GRPC_CSHARP_VERSION
+RUN git clone --recursive --depth=1 -b v${GRPC_CSHARP_VERSION} https://github.com/grpc/grpc.git /grpc && \
+    ln -s /grpc/third_party/protobuf /protobuf && \
+    mkdir -p /grpc/cmake/build && \
+    cd /grpc/cmake/build && \
+    cmake \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DgRPC_BUILD_TESTS=OFF \
+        -gRPC_BUILD_GRPC_CPP_PLUGIN=OFF \
+        -gRPC_BUILD_GRPC_NODE_PLUGIN=OFF \
+        -gRPC_BUILD_GRPC_OBJECTIVE_C_PLUGIN=OFF \
+        -gRPC_BUILD_GRPC_PHP_PLUGIN=OFF \
+        -gRPC_BUILD_GRPC_PYTHON_PLUGIN=OFF \
+        -gRPC_BUILD_GRPC_RUBY_PLUGIN=OFF \
+        -DgRPC_INSTALL=ON \
+        -DCMAKE_INSTALL_PREFIX=/out/usr \
+        ../.. && \
+    make -j4 install && \
+    rm -Rf /grpc
+
 
 FROM golang:${GO_VERSION}-alpine${ALPINE_VERSION} as go_builder
 RUN apk add --no-cache build-base curl git
@@ -159,7 +186,12 @@ ARG UPX_VERSION
 RUN mkdir -p /upx && curl -sSL https://github.com/upx/upx/releases/download/v${UPX_VERSION}/upx-${UPX_VERSION}-amd64_linux.tar.xz | tar xJ --strip 1 -C /upx && \
     install -D /upx/upx /usr/local/bin/upx
 
+# Use all output including headers and protoc from protoc_builder
 COPY --from=protoc_builder /out/ /out/
+# Use protoc and plugin from protoc_cs_builder
+COPY --from=protoc_cs_builder /out/usr/bin/protoc-* /out/usr/bin/protoc-csharp
+COPY --from=protoc_cs_builder /out/usr/bin/grpc_csharp_plugin /out/usr/bin/grpc_csharp_plugin
+# Integrate all output from go_builder
 COPY --from=go_builder /out/ /out/
 COPY --from=rust_builder /out/ /out/
 COPY --from=swift_builder /protoc-gen-swift /out/protoc-gen-swift
@@ -175,6 +207,7 @@ RUN upx --lzma $(find /out/usr/bin/ \
         -not -name 'protoc-gen-dart' \
     )
 RUN find /out -name "*.a" -delete -or -name "*.la" -delete
+
 
 FROM alpine:${ALPINE_VERSION}
 LABEL maintainer="The Jaeger Authors"
