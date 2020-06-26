@@ -56,6 +56,12 @@ RUN git clone --recursive --depth=1 -b v${GRPC_CSHARP_VERSION} https://github.co
     cmake \
         -DCMAKE_BUILD_TYPE=Release \
         -DgRPC_BUILD_TESTS=OFF \
+        -gRPC_BUILD_GRPC_CPP_PLUGIN=OFF \
+        -gRPC_BUILD_GRPC_NODE_PLUGIN=OFF \
+        -gRPC_BUILD_GRPC_OBJECTIVE_C_PLUGIN=OFF \
+        -gRPC_BUILD_GRPC_PHP_PLUGIN=OFF \
+        -gRPC_BUILD_GRPC_PYTHON_PLUGIN=OFF \
+        -gRPC_BUILD_GRPC_RUBY_PLUGIN=OFF \
         -DgRPC_INSTALL=ON \
         -DCMAKE_INSTALL_PREFIX=/out/usr \
         ../.. && \
@@ -117,7 +123,7 @@ RUN mkdir -p /upx && curl -sSL https://github.com/upx/upx/releases/download/v${U
 # Use all output including headers and protoc from protoc_builder
 COPY --from=protoc_builder /out/ /out/
 # Use protoc and plugin from protoc_cs_builder
-COPY --from=protoc_cs_builder /out/usr/bin/protoc-3.11.2.0 /out/usr/bin/protoc-csharp
+COPY --from=protoc_cs_builder /out/usr/bin/protoc-* /out/usr/bin/protoc-csharp
 COPY --from=protoc_cs_builder /out/usr/bin/grpc_csharp_plugin /out/usr/bin/grpc_csharp_plugin
 # Integrate all output from go_builder
 COPY --from=go_builder /out/ /out/
