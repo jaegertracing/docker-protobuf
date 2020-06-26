@@ -2,6 +2,7 @@ ARG ALPINE_VERSION=3.10
 ARG GO_VERSION=1.13.4
 ARG GRPC_GATEWAY_VERSION=1.12.2
 ARG GRPC_JAVA_VERSION=1.26.0
+ARG GRPC_CSHARP_VERSION=1.28.1
 ARG GRPC_VERSION=1.26.0
 ARG PROTOC_GEN_GO_VERSION=1.3.2
 ARG PROTOC_GEN_GOGO_VERSION=ba06b47c162d49f2af050fb4c75bcbc86a159d5c
@@ -9,24 +10,25 @@ ARG PROTOC_GEN_LINT_VERSION=0.2.1
 ARG UPX_VERSION=3.96
 
 
-FROM alpine:${ALPINE_VERSION} as protoc_builder
-RUN apk add --no-cache build-base curl automake autoconf libtool git zlib-dev
+FROM alpine:${ALPINE_VERSION} as protoc_base
+RUN apk add --no-cache build-base curl cmake autoconf libtool git zlib-dev linux-headers && \
+    mkdir -p /out
 
-RUN mkdir -p /out
 
-
+FROM protoc_base as protoc_builder
 ARG GRPC_VERSION
-RUN git clone --recursive --depth=1 -b v${GRPC_VERSION} https://github.com/grpc/grpc.git /grpc && \
+RUN apk add --no-cache automake && \
+    git clone --recursive --depth=1 -b v${GRPC_VERSION} https://github.com/grpc/grpc.git /grpc && \
     ln -s /grpc/third_party/protobuf /protobuf && \
     cd /protobuf && \
     ./autogen.sh && \
     ./configure --prefix=/usr --enable-static=no && \
-    make && \
-    make check && \
-    make install && \
-    make install DESTDIR=/out && \
+    make -j4 && \
+    make -j4 check && \
+    make -j4 install && \
+    make -j4 install DESTDIR=/out && \
     cd /grpc && \
-    make install-plugins prefix=/out/usr
+    make -j4 install-plugins prefix=/out/usr
 
 ARG GRPC_JAVA_VERSION
 RUN mkdir -p /grpc-java && \
@@ -34,11 +36,38 @@ RUN mkdir -p /grpc-java && \
     cd /grpc-java && \
     g++ \
         -I. -I/protobuf/src \
+        -I/out/usr/include \
         compiler/src/java_plugin/cpp/*.cpp \
-        -L/protobuf/src/.libs \
+        -L/out/usr/lib \
+        -L/out/usr/lib64 \
         -lprotoc -lprotobuf -lpthread --std=c++0x -s \
         -o protoc-gen-grpc-java && \
-    install -Ds protoc-gen-grpc-java /out/usr/bin/protoc-gen-grpc-java
+    install -Ds protoc-gen-grpc-java /out/usr/bin/protoc-gen-grpc-java && \
+    rm -Rf /grpc-java && \
+    rm -Rf /grpc
+
+
+FROM protoc_base AS protoc_cs_builder
+ARG GRPC_CSHARP_VERSION
+RUN git clone --recursive --depth=1 -b v${GRPC_CSHARP_VERSION} https://github.com/grpc/grpc.git /grpc && \
+    ln -s /grpc/third_party/protobuf /protobuf && \
+    mkdir -p /grpc/cmake/build && \
+    cd /grpc/cmake/build && \
+    cmake \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DgRPC_BUILD_TESTS=OFF \
+        -gRPC_BUILD_GRPC_CPP_PLUGIN=OFF \
+        -gRPC_BUILD_GRPC_NODE_PLUGIN=OFF \
+        -gRPC_BUILD_GRPC_OBJECTIVE_C_PLUGIN=OFF \
+        -gRPC_BUILD_GRPC_PHP_PLUGIN=OFF \
+        -gRPC_BUILD_GRPC_PYTHON_PLUGIN=OFF \
+        -gRPC_BUILD_GRPC_RUBY_PLUGIN=OFF \
+        -DgRPC_INSTALL=ON \
+        -DCMAKE_INSTALL_PREFIX=/out/usr \
+        ../.. && \
+    make -j4 install && \
+    rm -Rf /grpc
+
 
 FROM golang:${GO_VERSION}-alpine${ALPINE_VERSION} as go_builder
 RUN apk add --no-cache build-base curl git
@@ -84,7 +113,6 @@ RUN mkdir -p ${GOPATH}/src/github.com/grpc-ecosystem/grpc-gateway && \
     install -D $(find ./third_party/googleapis/google/rpc -name '*.proto') -t /out/usr/include/google/rpc
 
 
-
 FROM alpine:${ALPINE_VERSION} as packer
 RUN apk add --no-cache curl
 
@@ -92,12 +120,19 @@ ARG UPX_VERSION
 RUN mkdir -p /upx && curl -sSL https://github.com/upx/upx/releases/download/v${UPX_VERSION}/upx-${UPX_VERSION}-amd64_linux.tar.xz | tar xJ --strip 1 -C /upx && \
     install -D /upx/upx /usr/local/bin/upx
 
+# Use all output including headers and protoc from protoc_builder
 COPY --from=protoc_builder /out/ /out/
+# Use protoc and plugin from protoc_cs_builder
+COPY --from=protoc_cs_builder /out/usr/bin/protoc-* /out/usr/bin/protoc-csharp
+COPY --from=protoc_cs_builder /out/usr/bin/grpc_csharp_plugin /out/usr/bin/grpc_csharp_plugin
+# Integrate all output from go_builder
 COPY --from=go_builder /out/ /out/
+
 RUN upx --lzma \
         /out/usr/bin/grpc_* \
         /out/usr/bin/protoc-gen-*
 RUN find /out -name "*.a" -delete -or -name "*.la" -delete
+
 
 FROM alpine:${ALPINE_VERSION}
 LABEL maintainer="The Jaeger Authors"
