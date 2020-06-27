@@ -2,7 +2,7 @@
 
 [![](https://images.microbadger.com/badges/version/jaegertracing/protobuf.svg)](https://hub.docker.com/r/jaegertracing/protobuf/tags)
 
-A lightweight `protoc` Docker image, published as `jaegertracing/protobuf` to [Docker Hub](https://hub.docker.com/r/jaegertracing/protobuf/tags), with all dependencies built-in, to generate code in multiple languages.
+A lightweight `protoc` Docker image, published as `jaegertracing/protobuf` to [Docker Hub](https://hub.docker.com/r/jaegertracing/protobuf/tags), with all dependencies built-in, to generate code in multiple languages. Forked from https://github.com/TheThingsIndustries/docker-protobuf.
 
 ## Purpose
 
