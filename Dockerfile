@@ -23,12 +23,12 @@ RUN apk add --no-cache automake && \
     cd /protobuf && \
     ./autogen.sh && \
     ./configure --prefix=/usr --enable-static=no && \
-    make -j4 && \
-    make -j4 check && \
-    make -j4 install && \
-    make -j4 install DESTDIR=/out && \
+    make -j21 && \
+    make -j21 check && \
+    make -j21 install && \
+    make -j21 install DESTDIR=/out && \
     cd /grpc && \
-    make -j4 install-plugins prefix=/out/usr
+    make -j21 install-plugins prefix=/out/usr
 
 ARG GRPC_JAVA_VERSION
 RUN mkdir -p /grpc-java && \
@@ -65,7 +65,7 @@ RUN git clone --recursive --depth=1 -b v${GRPC_CSHARP_VERSION} https://github.co
         -DgRPC_INSTALL=ON \
         -DCMAKE_INSTALL_PREFIX=/out/usr \
         ../.. && \
-    make -j4 install && \
+    make -j21 install && \
     rm -Rf /grpc
 
 
@@ -141,6 +141,6 @@ RUN apk add --no-cache bash libstdc++ && \
     ln -s /usr/bin/grpc_cpp_plugin /usr/bin/protoc-gen-grpc-cpp && \
     ln -s /usr/bin/grpc_csharp_plugin /usr/bin/protoc-gen-grpc-csharp && \
     ln -s /usr/bin/grpc_node_plugin /usr/bin/protoc-gen-grpc-js && \
-    ln -s /usr/bin/grpc_python_plugin /usr/bin/protoc-gen-grpc-python
+    ln -s /usr/bin/grpc_python_plugin /usr/bin/protoc-gen-grpc_python
 COPY protoc-wrapper /usr/bin/protoc-wrapper
 ENTRYPOINT ["protoc-wrapper", "-I/usr/include"]
