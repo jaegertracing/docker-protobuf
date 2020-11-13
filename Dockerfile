@@ -23,12 +23,12 @@ RUN apk add --no-cache automake && \
     cd /protobuf && \
     ./autogen.sh && \
     ./configure --prefix=/usr --enable-static=no && \
-    make -j21 && \
-    make -j21 check && \
-    make -j21 install && \
-    make -j21 install DESTDIR=/out && \
+    make -j4 && \
+    make -j4 check && \
+    make -j4 install && \
+    make -j4 install DESTDIR=/out && \
     cd /grpc && \
-    make -j21 install-plugins prefix=/out/usr
+    make -j4 install-plugins prefix=/out/usr
 
 ARG GRPC_JAVA_VERSION
 RUN mkdir -p /grpc-java && \
@@ -65,7 +65,7 @@ RUN git clone --recursive --depth=1 -b v${GRPC_CSHARP_VERSION} https://github.co
         -DgRPC_INSTALL=ON \
         -DCMAKE_INSTALL_PREFIX=/out/usr \
         ../.. && \
-    make -j21 install && \
+    make -j4 install && \
     rm -Rf /grpc
 
 
