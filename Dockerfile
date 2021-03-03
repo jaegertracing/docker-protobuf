@@ -1,34 +1,37 @@
-ARG ALPINE_VERSION=3.10
-ARG GO_VERSION=1.13.4
-ARG GRPC_GATEWAY_VERSION=1.12.2
-ARG GRPC_JAVA_VERSION=1.26.0
-ARG GRPC_CSHARP_VERSION=1.28.1
-ARG GRPC_VERSION=1.26.0
-ARG PROTOC_GEN_GO_VERSION=1.3.2
-ARG PROTOC_GEN_GOGO_VERSION=ba06b47c162d49f2af050fb4c75bcbc86a159d5c
+ARG ALPINE_VERSION=3.13
+ARG GO_VERSION=1.14.15
+ARG GRPC_GATEWAY_VERSION=1.16.0 
+ARG GRPC_JAVA_VERSION=1.35.0
+ARG GRPC_CSHARP_VERSION=1.35.0
+ARG GRPC_VERSION=1.35.0
+ARG PROTOC_GEN_GO_VERSION=1.4.3
+# v1.3.2, using the version directly does not work: "tar: invalid magic"
+ARG PROTOC_GEN_GOGO_VERSION=b03c65ea87cdc3521ede29f62fe3ce239267c1bc
 ARG PROTOC_GEN_LINT_VERSION=0.2.1
 ARG UPX_VERSION=3.96
-
 
 FROM alpine:${ALPINE_VERSION} as protoc_base
 RUN apk add --no-cache build-base curl cmake autoconf libtool git zlib-dev linux-headers && \
     mkdir -p /out
 
-
 FROM protoc_base as protoc_builder
 ARG GRPC_VERSION
-RUN apk add --no-cache automake && \
+RUN apk add --no-cache automake ninja && \
     git clone --recursive --depth=1 -b v${GRPC_VERSION} https://github.com/grpc/grpc.git /grpc && \
     ln -s /grpc/third_party/protobuf /protobuf && \
-    cd /protobuf && \
-    ./autogen.sh && \
-    ./configure --prefix=/usr --enable-static=no && \
-    make -j4 && \
-    make -j4 check && \
-    make -j4 install && \
-    make -j4 install DESTDIR=/out && \
-    cd /grpc && \
-    make -j4 install-plugins prefix=/out/usr
+    mkdir -p /grpc/cmake/build && \
+    cd /grpc/cmake/build && \
+    cmake \
+        -GNinja \
+        -DBUILD_SHARED_LIBS=ON \
+        -DCMAKE_INSTALL_PREFIX=/usr \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DgRPC_INSTALL=ON \
+        -DgRPC_BUILD_TESTS=OFF \
+        ../.. && \
+    cmake --build . --target plugins && \
+    cmake --build . --target install && \
+    DESTDIR=/out cmake --build . --target install 
 
 ARG GRPC_JAVA_VERSION
 RUN mkdir -p /grpc-java && \
@@ -128,9 +131,14 @@ COPY --from=protoc_cs_builder /out/usr/bin/grpc_csharp_plugin /out/usr/bin/grpc_
 # Integrate all output from go_builder
 COPY --from=go_builder /out/ /out/
 
-RUN upx --lzma \
-        /out/usr/bin/grpc_* \
-        /out/usr/bin/protoc-gen-*
+RUN upx --lzma $(find /out/usr/bin/ \
+        -type f -name 'grpc_*' \
+        -not -name 'grpc_node_plugin' \
+        -not -name 'grpc_php_plugin' \
+        -not -name 'grpc_ruby_plugin' \
+        -not -name 'grpc_python_plugin' \
+        -or -name 'protoc-gen-*' \
+    )
 RUN find /out -name "*.a" -delete -or -name "*.la" -delete
 
 
