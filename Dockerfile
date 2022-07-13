@@ -54,8 +54,6 @@ ARG GRPC_WEB_VERSION
 RUN curl -sSLO https://github.com/grpc/grpc-web/releases/download/${GRPC_WEB_VERSION}/protoc-gen-grpc-web-${GRPC_WEB_VERSION}-linux-x86_64 && \
     mv protoc-gen-grpc-web-${GRPC_WEB_VERSION}-linux-x86_64 /out/usr/bin/protoc-gen-grpc-web && \
     chmod +x /out/usr/bin/protoc-gen-grpc-web
-#    cp /out/usr/bin/protoc-gen-grpc-web /out/usr/bin/grpc_web_plugin
-
 
 FROM protoc_base AS protoc_cs_builder
 ARG GRPC_CSHARP_VERSION
