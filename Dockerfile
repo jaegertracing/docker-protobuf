@@ -1,10 +1,11 @@
 ARG ALPINE_VERSION=3.13
 ARG GO_VERSION=1.14.15
-ARG GRPC_GATEWAY_VERSION=1.16.0 
+ARG GRPC_GATEWAY_VERSION=1.16.0
 ARG GRPC_JAVA_VERSION=1.35.0
 ARG GRPC_CSHARP_VERSION=1.35.0
 ARG GRPC_VERSION=1.35.0
 ARG PROTOC_GEN_GO_VERSION=1.4.3
+ARG GRPC_WEB_VERSION=1.3.1
 # v1.3.2, using the version directly does not work: "tar: invalid magic"
 ARG PROTOC_GEN_GOGO_VERSION=b03c65ea87cdc3521ede29f62fe3ce239267c1bc
 ARG PROTOC_GEN_LINT_VERSION=0.2.1
@@ -31,7 +32,7 @@ RUN apk add --no-cache automake ninja && \
         ../.. && \
     cmake --build . --target plugins && \
     cmake --build . --target install && \
-    DESTDIR=/out cmake --build . --target install 
+    DESTDIR=/out cmake --build . --target install
 
 ARG GRPC_JAVA_VERSION
 RUN mkdir -p /grpc-java && \
@@ -48,6 +49,12 @@ RUN mkdir -p /grpc-java && \
     install -Ds protoc-gen-grpc-java /out/usr/bin/protoc-gen-grpc-java && \
     rm -Rf /grpc-java && \
     rm -Rf /grpc
+
+ARG GRPC_WEB_VERSION
+RUN curl -sSLO https://github.com/grpc/grpc-web/releases/download/${GRPC_WEB_VERSION}/protoc-gen-grpc-web-${GRPC_WEB_VERSION}-linux-x86_64 && \
+    mv protoc-gen-grpc-web-${GRPC_WEB_VERSION}-linux-x86_64 /out/usr/bin/protoc-gen-grpc-web && \
+    chmod +x /out/usr/bin/protoc-gen-grpc-web
+#    cp /out/usr/bin/protoc-gen-grpc-web /out/usr/bin/grpc_web_plugin
 
 
 FROM protoc_base AS protoc_cs_builder
