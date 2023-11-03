@@ -1,10 +1,10 @@
 ARG ALPINE_VERSION=3.13
-ARG GO_VERSION=1.14.15
+ARG GO_VERSION=1.17.3
 ARG GRPC_GATEWAY_VERSION=1.16.0 
 ARG GRPC_JAVA_VERSION=1.35.0
 ARG GRPC_CSHARP_VERSION=1.35.0
 ARG GRPC_VERSION=1.35.0
-ARG PROTOC_GEN_GO_VERSION=1.4.3
+ARG PROTOC_GEN_GO_VERSION=1.31.0
 # v1.3.2, using the version directly does not work: "tar: invalid magic"
 ARG PROTOC_GEN_GOGO_VERSION=b03c65ea87cdc3521ede29f62fe3ce239267c1bc
 ARG PROTOC_GEN_LINT_VERSION=0.2.1
@@ -74,13 +74,10 @@ RUN git clone --recursive --depth=1 -b v${GRPC_CSHARP_VERSION} https://github.co
 
 FROM golang:${GO_VERSION}-alpine${ALPINE_VERSION} as go_builder
 RUN apk add --no-cache build-base curl git
+ENV GOBIN=/out/usr/bin
 
 ARG PROTOC_GEN_GO_VERSION
-RUN mkdir -p ${GOPATH}/src/github.com/golang/protobuf && \
-    curl -sSL https://api.github.com/repos/golang/protobuf/tarball/v${PROTOC_GEN_GO_VERSION} | tar xz --strip 1 -C ${GOPATH}/src/github.com/golang/protobuf &&\
-    cd ${GOPATH}/src/github.com/golang/protobuf && \
-    go build -ldflags '-w -s' -o /golang-protobuf-out/protoc-gen-go ./protoc-gen-go && \
-    install -Ds /golang-protobuf-out/protoc-gen-go /out/usr/bin/protoc-gen-go
+RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@v${PROTOC_GEN_GO_VERSION}
 
 ARG PROTOC_GEN_GOGO_VERSION
 RUN mkdir -p ${GOPATH}/src/github.com/gogo/protobuf && \
