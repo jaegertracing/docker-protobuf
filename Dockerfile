@@ -1,14 +1,15 @@
-ARG ALPINE_VERSION=3.13
-ARG GO_VERSION=1.17.3
-ARG GRPC_GATEWAY_VERSION=1.16.0 
-ARG GRPC_JAVA_VERSION=1.35.0
-ARG GRPC_CSHARP_VERSION=1.35.0
-ARG GRPC_VERSION=1.35.0
+ARG ALPINE_VERSION=3.18
+ARG GO_VERSION=1.21.3
+ARG GRPC_GATEWAY_VERSION=2.18.0
+ARG GRPC_JAVA_VERSION=1.50.0
+ARG GRPC_CSHARP_VERSION=1.50.0
+ARG GRPC_VERSION=1.50.0
 ARG PROTOC_GEN_GO_VERSION=1.31.0
+ARG PROTOC_GEN_GO_GRPC_VERSION=1.3.0
 # v1.3.2, using the version directly does not work: "tar: invalid magic"
 ARG PROTOC_GEN_GOGO_VERSION=b03c65ea87cdc3521ede29f62fe3ce239267c1bc
-ARG PROTOC_GEN_LINT_VERSION=0.2.1
-ARG UPX_VERSION=3.96
+ARG PROTOC_GEN_LINT_VERSION=0.3.0
+ARG UPX_VERSION=4.2.1
 
 FROM alpine:${ALPINE_VERSION} as protoc_base
 RUN apk add --no-cache build-base curl cmake autoconf libtool git zlib-dev linux-headers && \
@@ -59,12 +60,6 @@ RUN git clone --recursive --depth=1 -b v${GRPC_CSHARP_VERSION} https://github.co
     cmake \
         -DCMAKE_BUILD_TYPE=Release \
         -DgRPC_BUILD_TESTS=OFF \
-        -gRPC_BUILD_GRPC_CPP_PLUGIN=OFF \
-        -gRPC_BUILD_GRPC_NODE_PLUGIN=OFF \
-        -gRPC_BUILD_GRPC_OBJECTIVE_C_PLUGIN=OFF \
-        -gRPC_BUILD_GRPC_PHP_PLUGIN=OFF \
-        -gRPC_BUILD_GRPC_PYTHON_PLUGIN=OFF \
-        -gRPC_BUILD_GRPC_RUBY_PLUGIN=OFF \
         -DgRPC_INSTALL=ON \
         -DCMAKE_INSTALL_PREFIX=/out/usr \
         ../.. && \
@@ -77,7 +72,9 @@ RUN apk add --no-cache build-base curl git
 ENV GOBIN=/out/usr/bin
 
 ARG PROTOC_GEN_GO_VERSION
-RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@v${PROTOC_GEN_GO_VERSION}
+RUN mkdir -p ${GOPATH}/src/google.golang.org/protobuf && \
+    curl -sSL https://api.github.com/repos/protocolbuffers/protobuf-go/tarball/v${PROTOC_GEN_GO_VERSION} | tar xz --strip 1 -C ${GOPATH}/src/google.golang.org/protobuf &&\
+    go install google.golang.org/protobuf/cmd/protoc-gen-go@v${PROTOC_GEN_GO_VERSION}
 
 ARG PROTOC_GEN_GOGO_VERSION
 RUN mkdir -p ${GOPATH}/src/github.com/gogo/protobuf && \
@@ -90,28 +87,19 @@ RUN mkdir -p ${GOPATH}/src/github.com/gogo/protobuf && \
     install -D ./gogoproto/gogo.proto /out/usr/include/github.com/gogo/protobuf/gogoproto/gogo.proto
 
 ARG PROTOC_GEN_LINT_VERSION
-RUN cd / && \
-    curl -sSLO https://github.com/ckaznocha/protoc-gen-lint/releases/download/v${PROTOC_GEN_LINT_VERSION}/protoc-gen-lint_linux_amd64.zip && \
-    mkdir -p /protoc-gen-lint-out && \
-    cd /protoc-gen-lint-out && \
-    unzip -q /protoc-gen-lint_linux_amd64.zip && \
-    install -Ds /protoc-gen-lint-out/protoc-gen-lint /out/usr/bin/protoc-gen-lint
+RUN go install github.com/ckaznocha/protoc-gen-lint@v${PROTOC_GEN_LINT_VERSION}
 
 ARG GRPC_GATEWAY_VERSION
 RUN mkdir -p ${GOPATH}/src/github.com/grpc-ecosystem/grpc-gateway && \
     curl -sSL https://api.github.com/repos/grpc-ecosystem/grpc-gateway/tarball/v${GRPC_GATEWAY_VERSION} | tar xz --strip 1 -C ${GOPATH}/src/github.com/grpc-ecosystem/grpc-gateway && \
     cd ${GOPATH}/src/github.com/grpc-ecosystem/grpc-gateway && \
-    go build -ldflags '-w -s' -o /grpc-gateway-out/protoc-gen-grpc-gateway ./protoc-gen-grpc-gateway && \
-    go build -ldflags '-w -s' -o /grpc-gateway-out/protoc-gen-swagger ./protoc-gen-swagger && \
-    install -Ds /grpc-gateway-out/protoc-gen-grpc-gateway /out/usr/bin/protoc-gen-grpc-gateway && \
-    install -Ds /grpc-gateway-out/protoc-gen-swagger /out/usr/bin/protoc-gen-swagger && \
-    mkdir -p /out/usr/include/protoc-gen-swagger/options && \
-    install -D $(find ./protoc-gen-swagger/options -name '*.proto') -t /out/usr/include/protoc-gen-swagger/options && \
-    mkdir -p /out/usr/include/google/api && \
-    install -D $(find ./third_party/googleapis/google/api -name '*.proto') -t /out/usr/include/google/api && \
-    mkdir -p /out/usr/include/google/rpc && \
-    install -D $(find ./third_party/googleapis/google/rpc -name '*.proto') -t /out/usr/include/google/rpc
+    mkdir -p /out/usr/include/protoc-gen-openapiv2/options && \
+    install -D $(find ./protoc-gen-openapiv2/options -name '*.proto') -t /out/usr/include/protoc-gen-openapiv2/options && \
+    go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@v${GRPC_GATEWAY_VERSION} && \
+    go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@v${GRPC_GATEWAY_VERSION}
 
+ARG PROTOC_GEN_GO_GRPC_VERSION
+RUN go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v${PROTOC_GEN_GO_GRPC_VERSION}
 
 FROM alpine:${ALPINE_VERSION} as packer
 RUN apk add --no-cache curl
