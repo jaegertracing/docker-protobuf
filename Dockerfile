@@ -9,7 +9,7 @@ ARG PROTOC_GEN_GO_GRPC_VERSION=1.3.0
 # v1.3.2, using the version directly does not work: "tar: invalid magic"
 ARG PROTOC_GEN_GOGO_VERSION=b03c65ea87cdc3521ede29f62fe3ce239267c1bc
 ARG PROTOC_GEN_LINT_VERSION=0.2.1
-ARG UPX_VERSION=3.96
+ARG UPX_VERSION=4.2.1
 
 FROM alpine:${ALPINE_VERSION} as protoc_base
 RUN apk add --no-cache build-base curl cmake autoconf libtool git zlib-dev linux-headers && \
