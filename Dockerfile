@@ -8,7 +8,7 @@ ARG PROTOC_GEN_GO_VERSION=1.31.0
 ARG PROTOC_GEN_GO_GRPC_VERSION=1.3.0
 # v1.3.2, using the version directly does not work: "tar: invalid magic"
 ARG PROTOC_GEN_GOGO_VERSION=b03c65ea87cdc3521ede29f62fe3ce239267c1bc
-ARG PROTOC_GEN_LINT_VERSION=0.2.1
+ARG PROTOC_GEN_LINT_VERSION=0.3.0
 ARG UPX_VERSION=4.2.1
 
 FROM alpine:${ALPINE_VERSION} as protoc_base
@@ -90,14 +90,8 @@ RUN mkdir -p ${GOPATH}/src/github.com/gogo/protobuf && \
     install -D $(find ./protobuf/google/protobuf -name '*.proto') -t /out/usr/include/github.com/gogo/protobuf/protobuf/google/protobuf && \
     install -D ./gogoproto/gogo.proto /out/usr/include/github.com/gogo/protobuf/gogoproto/gogo.proto
 
-# This package is not built for arm64 architecture, and we don't really use it.
-# ARG PROTOC_GEN_LINT_VERSION
-# RUN cd / && \
-#     curl -sSLO https://github.com/ckaznocha/protoc-gen-lint/releases/download/v${PROTOC_GEN_LINT_VERSION}/protoc-gen-lint_linux_${TARGETARCH}.zip && \
-#     mkdir -p /protoc-gen-lint-out && \
-#     cd /protoc-gen-lint-out && \
-#     unzip -q /protoc-gen-lint_linux_${TARGETARCH}.zip && \
-#     install -Ds /protoc-gen-lint-out/protoc-gen-lint /out/usr/bin/protoc-gen-lint
+ARG PROTOC_GEN_LINT_VERSION
+RUN go install github.com/ckaznocha/protoc-gen-lint@v${PROTOC_GEN_LINT_VERSION}
 
 ARG GRPC_GATEWAY_VERSION
 RUN mkdir -p ${GOPATH}/src/github.com/grpc-ecosystem/grpc-gateway && \
