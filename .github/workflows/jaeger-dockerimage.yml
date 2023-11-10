@@ -15,24 +15,43 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v4
+      with:
+        submodules: true
+    -
+      name: Set up QEMU
+      uses: docker/setup-qemu-action@v2
+    -
+      name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+    -
+      name: Login to DockerHub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+  
     - name: Build the Docker image
-      run: docker build . -t build
+      run: docker buildx build -t build --load .
+    
+    # TODO: https://github.com/jaegertracing/docker-protobuf/issues/30
+    - name: Test docker image
+      run : |
+        echo "Please add tests here"
+
     - name: Push the Docker image
       if: github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/')
       run: |
-        echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
-
-        function tag_and_push {
-          docker tag build "jaegertracing/protobuf:${1}" && docker push "jaegertracing/protobuf:${1}"
+        function build_and_push {
+          docker buildx build -t "jaegertracing/protobuf:${1}" --platform linux/amd64,linux/arm64/v8 --push .
         }
 
         if [[ "${GITHUB_REF}" == "refs/heads/master" ]]; then
-          tag_and_push "latest"
+        build_and_push "latest"
         elif [[ "${GITHUB_REF}" =~ refs/tags/v[0-9]+\.[0-9]+\.[0-9]+ ]]; then
             TAG="${GITHUB_REF#"refs/tags/v"}"
-            tag_and_push "${TAG}"
-            tag_and_push "latest"
+            build_and_push "${TAG}"
+            build_and_push "latest"
         else
-          tag_and_push "${GITHUB_REF#"refs/tags/"}"
+          build_and_push "${GITHUB_REF#"refs/tags/"}"
         fi
