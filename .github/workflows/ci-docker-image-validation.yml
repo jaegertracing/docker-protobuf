@@ -1,0 +1,23 @@
+name: Docker Image Validation
+on:
+    pull_request:
+        branches: 
+            - master
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        steps:
+        - uses: actions/checkout@v4
+        - name: Build the Docker image
+          run: docker buildx build -t protobuf .
+
+        - name: Checkout jaeger
+        - uses: actions/checkout@v4
+          with:
+            repository: jaegertracting/jaeger
+            path: jaeger
+
+        - name: Build Proto in Jaeger
+          working-directory: jaeger
+          run: make proto JAEGER_DOCKER_PROTOBUF=protobuf
