@@ -1,8 +1,11 @@
 name: Docker Image Validation
 on:
+    push:
+        branches:
+            - master
     pull_request:
         branches: 
-            - master
+            - ci-validation-of-docker-images
 
 jobs:
     build:
