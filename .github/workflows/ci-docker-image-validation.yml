@@ -18,13 +18,13 @@ jobs:
         - name: Checkout jaeger
           uses: actions/checkout@v4
           with:
-            repository: jaegertracting/jaeger
+            repository: jaegertracing/jaeger
             path: jaeger
 
         - name: Checkout jaeger-idl
           uses: actions/checkout@v4
           with:
-            repository: jaegertracting/jaeger-idl
+            repository: jaegertracing/jaeger-idl
             path: jaeger-idl
 
         - name: Build Proto in Jaeger
