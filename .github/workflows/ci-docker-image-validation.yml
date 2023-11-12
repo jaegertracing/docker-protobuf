@@ -21,6 +21,20 @@ jobs:
             repository: jaegertracting/jaeger
             path: jaeger
 
+        - name: Checkout jaeger-idl
+          uses: actions/checkout@v4
+          with:
+            repository: jaegertracting/jaeger-idl
+            path: jaeger-idl
+
         - name: Build Proto in Jaeger
           working-directory: jaeger
-          run: make proto JAEGER_DOCKER_PROTOBUF=protobuf
+          run: |
+            make init-submodules
+            make proto JAEGER_DOCKER_PROTOBUF=protobuf
+
+        - name: Build Proto in Jaeger-idl
+          working-directory: jaeger-idl
+          run: |
+            make init-submodules
+            make proto PROTOC_IMAGE=protobuf
