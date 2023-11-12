@@ -36,5 +36,5 @@ jobs:
         - name: Build Proto in Jaeger-idl
           working-directory: jaeger-idl
           run: |
-            make init-submodules
+            make init-submodule
             make proto PROTOC_IMAGE=protobuf
