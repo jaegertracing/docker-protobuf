@@ -1,12 +1,16 @@
 name: Docker Image Validation
-on:
-    push:
-        branches:
-            - master
-    pull_request:
-        branches: 
-            - master
-
+on: 
+  push:
+    tags:
+      - '**'
+    branches:
+      - master
+  pull_request:
+    paths: 
+      - .github/workflows/jaeger-dockerimage.yml
+      - Dockerfile
+      - protoc-wrapper
+      
 jobs:
     build:
         runs-on: ubuntu-latest
