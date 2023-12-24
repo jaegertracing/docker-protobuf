@@ -40,7 +40,7 @@ jobs:
           IMAGE_TAGS=("--tag" "${namespace}/${component_name}:latest" "--tag" "${namespace}/${component_name}:${TAG}")
           push=true
         else
-          IMAGE_TAGS=("--tag" "${namespace}/${component_name}:${GITHUB_REF#"refs/tags/"}")
+          IMAGE_TAGS=()
         fi
 
         if [[ $push == true ]]; then
@@ -50,6 +50,7 @@ jobs:
           output="type=image"
         fi
 
+        set -x
         docker buildx build --output "type=image, push=true" \
           --progress=plain \
           --platform="${platforms}" \
