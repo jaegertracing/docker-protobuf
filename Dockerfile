@@ -1,6 +1,6 @@
 ARG ALPINE_VERSION=3.13
 ARG GO_VERSION=1.17.3
-ARG GRPC_GATEWAY_VERSION=1.16.0 
+ARG GRPC_GATEWAY_VERSION=1.16.0
 ARG GRPC_JAVA_VERSION=1.35.0
 ARG GRPC_CSHARP_VERSION=1.35.0
 ARG GRPC_VERSION=1.35.0
@@ -31,7 +31,7 @@ RUN apk add --no-cache automake ninja && \
         ../.. && \
     cmake --build . --target plugins && \
     cmake --build . --target install && \
-    DESTDIR=/out cmake --build . --target install 
+    DESTDIR=/out cmake --build . --target install
 
 ARG GRPC_JAVA_VERSION
 RUN mkdir -p /grpc-java && \
@@ -89,13 +89,14 @@ RUN mkdir -p ${GOPATH}/src/github.com/gogo/protobuf && \
     install -D $(find ./protobuf/google/protobuf -name '*.proto') -t /out/usr/include/github.com/gogo/protobuf/protobuf/google/protobuf && \
     install -D ./gogoproto/gogo.proto /out/usr/include/github.com/gogo/protobuf/gogoproto/gogo.proto
 
-ARG PROTOC_GEN_LINT_VERSION
-RUN cd / && \
-    curl -sSLO https://github.com/ckaznocha/protoc-gen-lint/releases/download/v${PROTOC_GEN_LINT_VERSION}/protoc-gen-lint_linux_amd64.zip && \
-    mkdir -p /protoc-gen-lint-out && \
-    cd /protoc-gen-lint-out && \
-    unzip -q /protoc-gen-lint_linux_amd64.zip && \
-    install -Ds /protoc-gen-lint-out/protoc-gen-lint /out/usr/bin/protoc-gen-lint
+# This package is not built for arm64 architecture, and we don't really use it.
+# ARG PROTOC_GEN_LINT_VERSION
+# RUN cd / && \
+#     curl -sSLO https://github.com/ckaznocha/protoc-gen-lint/releases/download/v${PROTOC_GEN_LINT_VERSION}/protoc-gen-lint_linux_${TARGETARCH}.zip && \
+#     mkdir -p /protoc-gen-lint-out && \
+#     cd /protoc-gen-lint-out && \
+#     unzip -q /protoc-gen-lint_linux_${TARGETARCH}.zip && \
+#     install -Ds /protoc-gen-lint-out/protoc-gen-lint /out/usr/bin/protoc-gen-lint
 
 ARG GRPC_GATEWAY_VERSION
 RUN mkdir -p ${GOPATH}/src/github.com/grpc-ecosystem/grpc-gateway && \
