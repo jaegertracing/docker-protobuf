@@ -31,16 +31,19 @@ jobs:
         platforms="linux/amd64,linux/arm64"
         namespace="jaegertracing"
         component_name='protobuf'
-
+        echo "GITHUB_REF=${GITHUB_REF}"
         if [[ "${GITHUB_REF}" == "refs/heads/master" ]]; then
           IMAGE_TAGS=("--tag" "${namespace}/${component_name}:latest")
           push=true
+          echo "running on master without tag, publish as latest"
         elif [[ "${GITHUB_REF}" =~ refs/tags/v[0-9]+\.[0-9]+\.[0-9]+ ]]; then
           TAG="${GITHUB_REF#"refs/tags/v"}"
           IMAGE_TAGS=("--tag" "${namespace}/${component_name}:latest" "--tag" "${namespace}/${component_name}:${TAG}")
           push=true
+          echo "running on master with a tag ${TAG}, publish as latest and as a version"
         else
           IMAGE_TAGS=()
+          echo "not publishing"
         fi
 
         if [[ $push == true ]]; then
