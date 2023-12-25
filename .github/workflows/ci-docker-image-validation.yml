@@ -1,0 +1,44 @@
+name: Docker Image Validation
+on: 
+  push:
+    tags:
+      - '**'
+    branches:
+      - master
+  pull_request:
+    paths: 
+      - .github/workflows/jaeger-dockerimage.yml
+      - Dockerfile
+      - protoc-wrapper
+      
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        steps:
+        - uses: actions/checkout@v4
+        - name: Build the Docker image
+          run: docker buildx build -t protobuf .
+
+        - name: Checkout jaeger
+          uses: actions/checkout@v4
+          with:
+            repository: jaegertracing/jaeger
+            path: jaeger
+
+        - name: Checkout jaeger-idl
+          uses: actions/checkout@v4
+          with:
+            repository: jaegertracing/jaeger-idl
+            path: jaeger-idl
+
+        - name: Build Proto in Jaeger
+          working-directory: jaeger
+          run: |
+            make init-submodules
+            make proto JAEGER_DOCKER_PROTOBUF=protobuf
+
+        - name: Build Proto in Jaeger-idl
+          working-directory: jaeger-idl
+          run: |
+            make init-submodule
+            make proto PROTOC_IMAGE=protobuf
