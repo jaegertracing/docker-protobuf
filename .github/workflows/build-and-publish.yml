@@ -4,7 +4,7 @@ on:
     tags:
       - '**'
     branches:
-      - master
+      - main
   pull_request:
     paths:
       - .github/workflows/jaeger-dockerimage.yml
@@ -47,7 +47,7 @@ jobs:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
 
-    - name: Build and push Docker image
+    - name: Build and maybe push Docker image
       uses: docker/build-push-action@v5
       with:
         push: ${{ github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') }}
