@@ -30,6 +30,15 @@ jobs:
       uses: docker/metadata-action@v5
       with:
         images: jaegertracing/protobuf
+        # The 'tags:' section defines how the Docker image will be tagged:
+        #   - pushes to main branch will be published as 'latest'
+        #   - pushes tagged with semver will be published as that version (without 'v')
+        #   - other tags can be used as is
+        # Documentation: https://github.com/docker/metadata-action#tags-input
+        tags: |
+          type=raw,value=latest,enable=${{ github.ref == 'refs/heads/master' }}
+          type=semver,pattern={{version}}
+          type=ref,event=tag
 
     - name: Login to DockerHub
       if: github.event_name != 'pull_request'
