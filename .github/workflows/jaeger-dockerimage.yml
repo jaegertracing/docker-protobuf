@@ -26,10 +26,10 @@ jobs:
         install: true
 
     - name: Extract tags/labels from Git
-        id: docker_meta
-        uses: docker/metadata-action@v5
-        with:
-          images: jaegertracing/protobuf
+      id: docker_meta
+      uses: docker/metadata-action@v5
+      with:
+        images: jaegertracing/protobuf
 
     - name: Login to DockerHub
       if: github.event_name != 'pull_request'
