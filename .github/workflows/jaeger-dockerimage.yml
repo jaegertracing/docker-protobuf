@@ -25,38 +25,25 @@ jobs:
       with:
         install: true
 
-    - name: Build (and maybe Publish) the Docker image
-      run: |
-        push=false
-        platforms="linux/amd64,linux/arm64"
-        namespace="jaegertracing"
-        component_name='protobuf'
-        echo "GITHUB_REF=${GITHUB_REF}"
-        if [[ "${GITHUB_REF}" == "refs/heads/master" ]]; then
-          IMAGE_TAGS=("--tag" "${namespace}/${component_name}:latest")
-          push=true
-          echo "running on master without tag, publish as latest"
-        elif [[ "${GITHUB_REF}" =~ refs/tags/v[0-9]+\.[0-9]+\.[0-9]+ ]]; then
-          TAG="${GITHUB_REF#"refs/tags/v"}"
-          IMAGE_TAGS=("--tag" "${namespace}/${component_name}:latest" "--tag" "${namespace}/${component_name}:${TAG}")
-          push=true
-          echo "running on master with a tag ${TAG}, publish as latest and as a version"
-        else
-          IMAGE_TAGS=()
-          echo "not publishing"
-        fi
+    - name: Extract tags/labels from Git
+        id: docker_meta
+        uses: docker/metadata-action@v5
+        with:
+          images: jaegertracing/protobuf
 
-        if [[ $push == true ]]; then
-          output="type=image, push=true"
-          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
-        else
-          output="type=image"
-        fi
+    - name: Login to DockerHub
+      if: github.event_name != 'pull_request'
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
 
-        set -x
-        docker buildx build --output "${output}" \
-          --progress=plain \
-          --platform="${platforms}" \
-          --file Dockerfile \
-          "${IMAGE_TAGS[@]}" \
-          .
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        push: ${{ github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/') }}
+        tags: ${{ steps.docker_meta.outputs.tags }}
+        labels: ${{ steps.docker_meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        platforms: linux/amd64,linux/arm64
