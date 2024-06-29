@@ -27,7 +27,7 @@ jobs:
 
     - name: Start local Docker registry
       if: ${{ github.event_name == 'pull_request' }}
-      shell: /bin/bash
+      shell: bash
       run: |
         docker inspect registry > /dev/null || docker run --rm -d -p 5000:5000 --name registry registry:2
 
