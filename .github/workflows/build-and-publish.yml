@@ -25,11 +25,18 @@ jobs:
       with:
         install: true
 
+    - name: Start local Docker registry
+      if: ${{ github.event_name == 'pull_request' }}
+      run: docker inspect registry > /dev/null || docker run --rm -d -p 5000:5000 --name registry registry:2
+
     - name: Extract tags/labels from Git
       id: docker_meta
       uses: docker/metadata-action@v5
       with:
-        images: jaegertracing/protobuf
+        # when running on pull request we want to push the image to local registry for further testing
+        images: |
+          jaegertracing/protobuf,enabled=${{ github.event_name != 'pull_request' }}
+          localhost:5000/jaegertracing/protobuf,enabled=${{ github.event_name == 'pull_request' }}
         # The 'tags:' section defines how the Docker image will be tagged:
         #   - pushes to main branch will be published as 'latest'
         #   - pushes tagged with semver will be published as that version (without 'v')
@@ -39,7 +46,7 @@ jobs:
           type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
           type=semver,pattern={{version}}
           type=ref,event=tag
-          type=sha
+          type=sha,enable=${{ github.event_name == 'pull_request' }}
 
     - name: Login to DockerHub
       if: github.event_name != 'pull_request'
@@ -51,7 +58,7 @@ jobs:
     - name: Build and maybe push Docker image
       uses: docker/build-push-action@v6
       with:
-        push: ${{ github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') }}
+        push: true
         tags: ${{ steps.docker_meta.outputs.tags }}
         labels: ${{ steps.docker_meta.outputs.labels }}
         context: .
