@@ -19,11 +19,9 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Set up QEMU
-      uses: docker/setup-qemu-action@v3
+    - uses: docker/setup-qemu-action@v3
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
+    - uses: docker/setup-buildx-action@v3
       with:
         install: true
 
@@ -41,6 +39,7 @@ jobs:
           type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
           type=semver,pattern={{version}}
           type=ref,event=tag
+          type=sha
 
     - name: Login to DockerHub
       if: github.event_name != 'pull_request'
@@ -50,11 +49,15 @@ jobs:
         password: ${{ secrets.DOCKER_PASSWORD }}
 
     - name: Build and maybe push Docker image
-      uses: docker/build-push-action@v5
+      # TODO remove next line
+      if: github.event_name != 'pull_request'
+      uses: docker/build-push-action@v6.2
       with:
         push: ${{ github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') }}
+        load: github.event_name == 'pull_request'
         tags: ${{ steps.docker_meta.outputs.tags }}
         labels: ${{ steps.docker_meta.outputs.labels }}
+        context: .
         cache-from: type=gha
         cache-to: type=gha,mode=max
         platforms: linux/amd64,linux/arm64
@@ -75,7 +78,7 @@ jobs:
     - name: Build Proto in Jaeger
       if: github.event_name == 'pull_request'
       working-directory: jaeger
-      run: make proto JAEGER_DOCKER_PROTOBUF=protobuf
+      run: make proto DOCKER_PROTOBUF_VERSION=latest
 
     - name: Checkout jaeger-idl for validation
       if: github.event_name == 'pull_request'
@@ -88,4 +91,4 @@ jobs:
     - name: Build Proto in jaeger-idl
       if: github.event_name == 'pull_request'
       working-directory: jaeger-idl
-      run: make proto PROTOC_IMAGE=protobuf
+      run: make proto PROTOC_VER=latest

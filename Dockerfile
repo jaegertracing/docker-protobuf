@@ -10,11 +10,11 @@ ARG PROTOC_GEN_GOGO_VERSION=b03c65ea87cdc3521ede29f62fe3ce239267c1bc
 ARG PROTOC_GEN_LINT_VERSION=0.2.1
 ARG UPX_VERSION=3.96
 
-FROM alpine:${ALPINE_VERSION} as protoc_base
+FROM alpine:${ALPINE_VERSION} AS protoc_base
 RUN apk add --no-cache build-base curl cmake autoconf libtool git zlib-dev linux-headers && \
     mkdir -p /out
 
-FROM protoc_base as protoc_builder
+FROM protoc_base AS protoc_builder
 ARG GRPC_VERSION
 RUN apk add --no-cache automake ninja && \
     git clone --recursive --depth=1 -b v${GRPC_VERSION} https://github.com/grpc/grpc.git /grpc && \
@@ -72,7 +72,7 @@ RUN git clone --recursive --depth=1 -b v${GRPC_CSHARP_VERSION} https://github.co
     rm -Rf /grpc
 
 
-FROM golang:${GO_VERSION}-alpine${ALPINE_VERSION} as go_builder
+FROM golang:${GO_VERSION}-alpine${ALPINE_VERSION} AS go_builder
 RUN apk add --no-cache build-base curl git
 ENV GOBIN=/out/usr/bin
 
@@ -114,7 +114,7 @@ RUN mkdir -p ${GOPATH}/src/github.com/grpc-ecosystem/grpc-gateway && \
     install -D $(find ./third_party/googleapis/google/rpc -name '*.proto') -t /out/usr/include/google/rpc
 
 
-FROM alpine:${ALPINE_VERSION} as packer
+FROM alpine:${ALPINE_VERSION} AS packer
 RUN apk add --no-cache curl
 
 ARG UPX_VERSION
