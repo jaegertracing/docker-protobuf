@@ -29,6 +29,8 @@ jobs:
       if: ${{ github.event_name == 'pull_request' }}
       shell: bash
       run: |
+        set -x
+
         docker inspect registry > /dev/null || docker run --rm -d -p 5000:5000 --name registry registry:2
 
         check_ready() {
