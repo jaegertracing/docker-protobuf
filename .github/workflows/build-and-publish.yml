@@ -59,6 +59,9 @@ jobs:
         cache-to: type=gha,mode=max
         platforms: linux/amd64,linux/arm64
 
+    - name: test that image can be run
+      run: docker run --platform linux/amd64 ${{ steps.docker_meta.outputs.tags }}
+
     # The following steps run only on pull requests and validate
     # that the new image can run successfully in Jaeger repos.
     # We do not check if the generated files would be different there,
