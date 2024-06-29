@@ -5,7 +5,7 @@ on:
   pull_request:
     branches: [main]
     paths:
-    - .github/workflows/jaeger-dockerimage.yml
+    - .github/workflows/build-and-publish.yml
     - Dockerfile
     - protoc-wrapper
   release:
@@ -19,19 +19,27 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Set up QEMU
-      uses: docker/setup-qemu-action@v3
+    - uses: docker/setup-qemu-action@v3
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
+    - uses: docker/setup-buildx-action@v3
       with:
         install: true
+        driver-opts: |
+          network=host
+
+    - name: Start local Docker registry
+      if: ${{ github.event_name == 'pull_request' }}
+      run: |
+        docker inspect registry > /dev/null || docker run --rm -d -p 5000:5000 --name registry registry:2
 
     - name: Extract tags/labels from Git
       id: docker_meta
       uses: docker/metadata-action@v5
       with:
-        images: jaegertracing/protobuf
+        # when running on pull request we want to push the image to local registry for further testing
+        images: |
+          jaegertracing/protobuf,enable=${{ github.event_name != 'pull_request' }}
+          localhost:5000/jaegertracing/protobuf,enable=${{ github.event_name == 'pull_request' }}
         # The 'tags:' section defines how the Docker image will be tagged:
         #   - pushes to main branch will be published as 'latest'
         #   - pushes tagged with semver will be published as that version (without 'v')
@@ -41,6 +49,7 @@ jobs:
           type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
           type=semver,pattern={{version}}
           type=ref,event=tag
+          type=sha,enable=${{ github.event_name == 'pull_request' }}
 
     - name: Login to DockerHub
       if: github.event_name != 'pull_request'
@@ -50,11 +59,12 @@ jobs:
         password: ${{ secrets.DOCKER_PASSWORD }}
 
     - name: Build and maybe push Docker image
-      uses: docker/build-push-action@v5
+      uses: docker/build-push-action@v6
       with:
-        push: ${{ github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') }}
+        push: true
         tags: ${{ steps.docker_meta.outputs.tags }}
         labels: ${{ steps.docker_meta.outputs.labels }}
+        context: .
         cache-from: type=gha
         cache-to: type=gha,mode=max
         platforms: linux/amd64,linux/arm64
@@ -63,6 +73,10 @@ jobs:
     # that the new image can run successfully in Jaeger repos.
     # We do not check if the generated files would be different there,
     # only that the build does not fail.
+
+    - name: Pull image for local testing
+      if: github.event_name == 'pull_request'
+      run: docker pull ${{ steps.docker_meta.outputs.tags }}
 
     - name: Checkout Jaeger for validation
       if: github.event_name == 'pull_request'
@@ -75,7 +89,7 @@ jobs:
     - name: Build Proto in Jaeger
       if: github.event_name == 'pull_request'
       working-directory: jaeger
-      run: make proto JAEGER_DOCKER_PROTOBUF=protobuf
+      run: make proto DOCKER_PROTOBUF=${{ steps.docker_meta.outputs.tags }}
 
     - name: Checkout jaeger-idl for validation
       if: github.event_name == 'pull_request'
@@ -88,4 +102,4 @@ jobs:
     - name: Build Proto in jaeger-idl
       if: github.event_name == 'pull_request'
       working-directory: jaeger-idl
-      run: make proto PROTOC_IMAGE=protobuf
+      run: make proto PROTOC_IMAGE=${{ steps.docker_meta.outputs.tags }}
