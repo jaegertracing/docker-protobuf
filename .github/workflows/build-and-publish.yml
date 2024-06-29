@@ -24,6 +24,8 @@ jobs:
     - uses: docker/setup-buildx-action@v3
       with:
         install: true
+        driver-opts: |
+          network=host
 
     - name: Start local Docker registry
       if: ${{ github.event_name == 'pull_request' }}
@@ -54,7 +56,6 @@ jobs:
     - name: Test manual build
       run: |
         docker buildx build --platform linux/amd64,linux/arm64 \
-          --driver-opt=network=host \
           --tag localhost:5000/jaegertracing/protobuf:sha-75e083c --push .
 
     - name: Extract tags/labels from Git
