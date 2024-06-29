@@ -1,0 +1,91 @@
+name: Docker Image
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+    paths:
+    - .github/workflows/jaeger-dockerimage.yml
+    - Dockerfile
+    - protoc-wrapper
+  release:
+    types: [published]
+  # allow running release workflow manually
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v3
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      with:
+        install: true
+
+    - name: Extract tags/labels from Git
+      id: docker_meta
+      uses: docker/metadata-action@v5
+      with:
+        images: jaegertracing/protobuf
+        # The 'tags:' section defines how the Docker image will be tagged:
+        #   - pushes to main branch will be published as 'latest'
+        #   - pushes tagged with semver will be published as that version (without 'v')
+        #   - other tags can be used as is
+        # Documentation: https://github.com/docker/metadata-action#tags-input
+        tags: |
+          type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+          type=semver,pattern={{version}}
+          type=ref,event=tag
+
+    - name: Login to DockerHub
+      if: github.event_name != 'pull_request'
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Build and maybe push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        push: ${{ github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') }}
+        tags: ${{ steps.docker_meta.outputs.tags }}
+        labels: ${{ steps.docker_meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        platforms: linux/amd64,linux/arm64
+
+    # The following steps run only on pull requests and validate
+    # that the new image can run successfully in Jaeger repos.
+    # We do not check if the generated files would be different there,
+    # only that the build does not fail.
+
+    - name: Checkout Jaeger for validation
+      if: github.event_name == 'pull_request'
+      uses: actions/checkout@v4
+      with:
+        repository: jaegertracing/jaeger
+        submodules: recursive
+        path: jaeger
+
+    - name: Build Proto in Jaeger
+      if: github.event_name == 'pull_request'
+      working-directory: jaeger
+      run: make proto JAEGER_DOCKER_PROTOBUF=protobuf
+
+    - name: Checkout jaeger-idl for validation
+      if: github.event_name == 'pull_request'
+      uses: actions/checkout@v4
+      with:
+        repository: jaegertracing/jaeger-idl
+        submodules: recursive
+        path: jaeger-idl
+
+    - name: Build Proto in jaeger-idl
+      if: github.event_name == 'pull_request'
+      working-directory: jaeger-idl
+      run: make proto PROTOC_IMAGE=protobuf
