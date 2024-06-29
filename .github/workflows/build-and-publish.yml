@@ -56,3 +56,31 @@ jobs:
         cache-from: type=gha
         cache-to: type=gha,mode=max
         platforms: linux/amd64,linux/arm64
+
+    - name: Checkout Jaeger for validation
+      if: github.event_name == 'pull_request'
+      uses: actions/checkout@v4
+      with:
+        repository: jaegertracing/jaeger
+        path: jaeger
+
+    - name: Build Proto in Jaeger
+      if: github.event_name == 'pull_request'
+      working-directory: jaeger
+      run: |
+        make init-submodules
+        make proto JAEGER_DOCKER_PROTOBUF=protobuf
+
+    - name: Checkout jaeger-idl for validation
+      if: github.event_name == 'pull_request'
+      uses: actions/checkout@v4
+      with:
+        repository: jaegertracing/jaeger-idl
+        path: jaeger-idl
+
+    - name: Build Proto in jaeger-idl
+      if: github.event_name == 'pull_request'
+      working-directory: jaeger-idl
+      run: |
+        make init-submodule
+        make proto PROTOC_IMAGE=protobuf
