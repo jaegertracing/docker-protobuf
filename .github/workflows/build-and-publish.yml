@@ -51,7 +51,7 @@ jobs:
 
     - name: Extract tags/labels from Git
       id: docker_meta
-      uses: docker/metadata-action@v6
+      uses: docker/metadata-action@v5
       with:
         # when running on pull request we want to push the image to local registry for further testing
         images: |
