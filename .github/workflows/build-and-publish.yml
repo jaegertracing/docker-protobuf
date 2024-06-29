@@ -51,6 +51,11 @@ jobs:
 
         # check_ready
 
+    - name: Test manual build
+      run: |
+        docker buildx build --platform linux/amd64,linux/arm64 \
+          --tag localhost:5000/jaegertracing/protobuf:sha-75e083c --push .
+
     - name: Extract tags/labels from Git
       id: docker_meta
       uses: docker/metadata-action@v5
