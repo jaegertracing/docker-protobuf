@@ -33,23 +33,23 @@ jobs:
 
         docker inspect registry > /dev/null || docker run --rm -d -p 5000:5000 --name registry registry:2
 
-        check_ready() {
-          url="http://localhost:5000/v2/"
-          end_time=$((SECONDS + 60))
-          while [[ $SECONDS -lt $end_time ]]; do
-            response=$(curl -s -I -o /dev/null -w "%{http_code}" $url)
-            if [[ $response -ge 200 && $response -lt 300 ]]; then
-              echo "Registry endpoint available at $url"
-              return 0
-            fi
-            echo "Registry endpoint not available yet"
-            sleep 10
-          done
-          echo "Registry endpoint unavailable"
-          return 1
-        }
+        # check_ready() {
+        #   url="http://localhost:5000/v2/"
+        #   end_time=$((SECONDS + 60))
+        #   while [[ $SECONDS -lt $end_time ]]; do
+        #     response=$(curl -s -I -o /dev/null -w "%{http_code}" $url)
+        #     if [[ $response -ge 200 && $response -lt 300 ]]; then
+        #       echo "Registry endpoint available at $url"
+        #       return 0
+        #     fi
+        #     echo "Registry endpoint not available yet"
+        #     sleep 10
+        #   done
+        #   echo "Registry endpoint unavailable"
+        #   return 1
+        # }
 
-        check_ready
+        # check_ready
 
     - name: Extract tags/labels from Git
       id: docker_meta
