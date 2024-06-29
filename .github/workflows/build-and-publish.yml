@@ -78,7 +78,7 @@ jobs:
     - name: Build Proto in Jaeger
       if: github.event_name == 'pull_request'
       working-directory: jaeger
-      run: make proto DOCKER_PROTOBUF_VERSION=latest
+      run: make proto DOCKER_PROTOBUF=${{ steps.docker_meta.outputs.tags }}
 
     - name: Checkout jaeger-idl for validation
       if: github.event_name == 'pull_request'
@@ -91,4 +91,4 @@ jobs:
     - name: Build Proto in jaeger-idl
       if: github.event_name == 'pull_request'
       working-directory: jaeger-idl
-      run: make proto PROTOC_VER=latest
+      run: make proto PROTOC_IMAGE=${{ steps.docker_meta.outputs.tags }}
