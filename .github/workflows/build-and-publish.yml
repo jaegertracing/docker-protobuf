@@ -1,16 +1,15 @@
 name: Docker Image
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   pull_request:
+    branches: [main]
     paths:
-      - .github/workflows/jaeger-dockerimage.yml
-      - Dockerfile
-      - protoc-wrapper
+    - .github/workflows/jaeger-dockerimage.yml
+    - Dockerfile
+    - protoc-wrapper
   release:
-    types:
-      - published
+    types: [published]
   # allow running release workflow manually
   workflow_dispatch:
 
@@ -60,30 +59,33 @@ jobs:
         cache-to: type=gha,mode=max
         platforms: linux/amd64,linux/arm64
 
+    # The following steps run only on pull requests and validate
+    # that the new image can run successfully in Jaeger repos.
+    # We do not check if the generated files would be different there,
+    # only that the build does not fail.
+
     - name: Checkout Jaeger for validation
       if: github.event_name == 'pull_request'
       uses: actions/checkout@v4
       with:
         repository: jaegertracing/jaeger
+        submodules: recursive
         path: jaeger
 
     - name: Build Proto in Jaeger
       if: github.event_name == 'pull_request'
       working-directory: jaeger
-      run: |
-        make init-submodules
-        make proto JAEGER_DOCKER_PROTOBUF=protobuf
+      run: make proto JAEGER_DOCKER_PROTOBUF=protobuf
 
     - name: Checkout jaeger-idl for validation
       if: github.event_name == 'pull_request'
       uses: actions/checkout@v4
       with:
         repository: jaegertracing/jaeger-idl
+        submodules: recursive
         path: jaeger-idl
 
     - name: Build Proto in jaeger-idl
       if: github.event_name == 'pull_request'
       working-directory: jaeger-idl
-      run: |
-        make init-submodule
-        make proto PROTOC_IMAGE=protobuf
+      run: make proto PROTOC_IMAGE=protobuf
