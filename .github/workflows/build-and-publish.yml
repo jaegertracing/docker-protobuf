@@ -35,8 +35,8 @@ jobs:
       with:
         # when running on pull request we want to push the image to local registry for further testing
         images: |
-          jaegertracing/protobuf,enabled=${{ github.event_name != 'pull_request' }}
-          localhost:5000/jaegertracing/protobuf,enabled=${{ github.event_name == 'pull_request' }}
+          jaegertracing/protobuf,enable=${{ github.event_name != 'pull_request' }}
+          localhost:5000/jaegertracing/protobuf,enable=${{ github.event_name == 'pull_request' }}
         # The 'tags:' section defines how the Docker image will be tagged:
         #   - pushes to main branch will be published as 'latest'
         #   - pushes tagged with semver will be published as that version (without 'v')
