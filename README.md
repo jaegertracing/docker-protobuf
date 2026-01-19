@@ -82,3 +82,7 @@ Use this command to find the path to proto files included in the image:
 ```
 docker run --rm -it --entrypoint=/bin/sh jaegertracing/protobuf:latest -c "find /usr/include -name *.proto"
 ```
+
+# Releases
+
+To release a new version create a new [GitHub Release](https://github.com/jaegertracing/docker-protobuf/releases) and the image will be built and published automatically with the release vesion.
