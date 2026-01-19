@@ -110,6 +110,7 @@ RUN mkdir -p ${GOPATH}/src/github.com/grpc-ecosystem/grpc-gateway && \
     install -D $(find ./protoc-gen-swagger/options -name '*.proto') -t /out/usr/include/protoc-gen-swagger/options && \
     mkdir -p /out/usr/include/google/api && \
     install -D $(find ./third_party/googleapis/google/api -name '*.proto') -t /out/usr/include/google/api && \
+    curl -sSL https://raw.githubusercontent.com/googleapis/googleapis/master/google/api/field_behavior.proto -o /out/usr/include/google/api/field_behavior.proto && \
     mkdir -p /out/usr/include/google/rpc && \
     install -D $(find ./third_party/googleapis/google/rpc -name '*.proto') -t /out/usr/include/google/rpc
 
