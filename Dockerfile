@@ -4,6 +4,7 @@ ARG GRPC_GATEWAY_VERSION=1.16.0
 ARG GRPC_JAVA_VERSION=1.35.0
 ARG GRPC_CSHARP_VERSION=1.35.0
 ARG GRPC_VERSION=1.35.0
+ARG GRPC_WEB_VERSION=1.3.1
 ARG PROTOC_GEN_GO_VERSION=1.31.0
 # v1.3.2, using the version directly does not work: "tar: invalid magic"
 ARG PROTOC_GEN_GOGO_VERSION=b03c65ea87cdc3521ede29f62fe3ce239267c1bc
@@ -49,6 +50,10 @@ RUN mkdir -p /grpc-java && \
     rm -Rf /grpc-java && \
     rm -Rf /grpc
 
+ARG GRPC_WEB_VERSION
+RUN curl -sSLO https://github.com/grpc/grpc-web/releases/download/${GRPC_WEB_VERSION}/protoc-gen-grpc-web-${GRPC_WEB_VERSION}-linux-x86_64 && \
+    mv protoc-gen-grpc-web-${GRPC_WEB_VERSION}-linux-x86_64 /out/usr/bin/protoc-gen-grpc-web && \
+    chmod +x /out/usr/bin/protoc-gen-grpc-web
 
 FROM protoc_base AS protoc_cs_builder
 ARG GRPC_CSHARP_VERSION

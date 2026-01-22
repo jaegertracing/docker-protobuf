@@ -20,13 +20,15 @@ A lightweight `protoc` Docker image, published as `jaegertracing/protobuf` to [D
 - https://github.com/grpc-ecosystem/grpc-gateway
 - https://github.com/grpc/grpc
 - https://github.com/grpc/grpc-java
+- https://github.com/grpc/grpc-web
 
 ## Supported languages
 - C#
 - C++
 - Go
 - Java / JavaNano (Android)
-- JavaScript
+- JavaScript (pure)
+- TypeScript (gRPC Web)
 - Objective-C
 - PHP
 - Python
@@ -56,6 +58,7 @@ $ docker run --rm jaegertracing/protobuf --help
   --php_out=OUT_DIR           Generate PHP source file.
   --python_out=OUT_DIR        Generate Python source file.
   --ruby_out=OUT_DIR          Generate Ruby source file.
+  --js_out=OUT_DIR --grpc-web_out=import_style=typescript,mode=grpcweb:OUT_DIR Generate Typescript source file.
 ```
 
 Example for Java:
@@ -63,6 +66,11 @@ Example for Java:
 docker run --rm -u $(id -u) -v${PWD}:${PWD} -w${PWD} jaegertracing/protobuf:latest --proto_path=${PWD} \
     --java_out=${PWD} -I/usr/include/github.com/gogo/protobuf ${PWD}/model.proto
 ```
+
+Note about Typescript:
+This is currently an experimental feature.
+**Do not** use `import_style=typescript` for `--js_out` ([read plugin documentation](https://github.com/grpc/grpc-web#typescript-support))
+
 
 CLI options:
 - `--proto_path`: The path where protoc should search for proto files
